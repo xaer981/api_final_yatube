@@ -3,6 +3,7 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
+from rest_framework.validators import UniqueTogetherValidator
 
 from posts.models import Comment, Follow, Group, Post, User
 
@@ -39,18 +40,20 @@ class FollowSerializer(serializers.ModelSerializer):
         fields = ('user', 'following')
         model = Follow
         read_only_fields = ('user',)
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Follow.objects.all(),
+                fields=('user', 'following'),
+                message='Вы уже подписаны на данного пользователя.'
+            )
+        ]
 
-    def validate(self, data):
-        already_followed = Follow.objects.filter(
-            user=self.context['request'].user,
-            following=data['following']).exists()
-        if (self.context['request'].user == data['following']
-           or already_followed):
+    def validate_following(self, value):
+        if self.context['request'].user == value:
             raise serializers.ValidationError(
-                'Нельзя подписаться на себя '
-                'или подписаться на кого-то дважды.')
+                'Нельзя подписаться на себя.')
 
-        return data
+        return value
 
 
 class GroupSerializer(serializers.ModelSerializer):

@@ -4,7 +4,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 
-from .permissions import IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly, ReadOnly
 from posts.models import Group, Post, User
 from .serializers import (CommentSerializer, FollowSerializer, GroupSerializer,
                           PostSerializer)
@@ -23,6 +23,13 @@ class CommentViewSet(viewsets.ModelViewSet):
         post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
 
         return post.comments.all()
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+
+            return (ReadOnly(),)
+
+        return super().get_permissions()
 
 
 class CreateListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
@@ -60,3 +67,10 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+
+            return (ReadOnly(),)
+
+        return super().get_permissions()
